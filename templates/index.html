@@ -4,8 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Explorador de Realidad Aumentada</title>
-  <link rel="stylesheet"
-        href="{{ url_for('static', filename='css/style.css') }}" />
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
 </head>
 <body>
   <div class="app">
@@ -23,32 +22,19 @@
       </button>
 
       <div class="feature-list">
-        <div class="feature">
-          <div class="feature-icon">👤</div>
-          <p>Filtros faciales</p>
-        </div>
-        <div class="feature">
-          <div class="feature-icon">🦄</div>
-          <p>Criaturas mágicas</p>
-        </div>
-        <div class="feature">
-          <div class="feature-icon">🏠</div>
-          <p>Ventanas animadas</p>
-        </div>
-        <div class="feature">
-          <div class="feature-icon">🌿</div>
-          <p>Flora interactiva</p>
-        </div>
-        <div class="feature">
-          <div class="feature-icon">🔲</div>
-          <p>Escaneo QR</p>
-        </div>
+        <div class="feature"><div class="feature-icon">👤</div><p>Filtros faciales</p></div>
+        <div class="feature"><div class="feature-icon">🦄</div><p>Criaturas mágicas</p></div>
+        <div class="feature"><div class="feature-icon">🏠</div><p>Ventanas animadas</p></div>
+        <div class="feature"><div class="feature-icon">🌿</div><p>Flora interactiva</p></div>
+        <div class="feature"><div class="feature-icon">🔲</div><p>Escaneo QR</p></div>
       </div>
     </section>
 
     <!-- contenedor de la experiencia AR -->
     <div id="ar-container" style="display: none;">
       <div class="camera-feed ar-view">
+
+        <!-- ✅ VIDEO de cámara -->
         <video id="camera-video"
                class="camera-video"
                autoplay
@@ -56,6 +42,15 @@
                muted>
         </video>
 
+        <!-- ✅ FILTRO alienígena fuera del video -->
+        <img 
+          id="alien-filter" 
+          class="alien-filter" 
+          src="{{ url_for('static', filename='img/Filtroalien.png') }}" 
+          style="display: none;" 
+        />
+
+        <!-- Placeholder -->
         <div id="camera-placeholder" class="camera-placeholder">
           <div class="placeholder-content">
             <div class="placeholder-icon">📷</div>
@@ -63,7 +58,7 @@
           </div>
         </div>
 
-        <!-- Filtro facial -->
+        <!-- Filtro facial (emoji + texto) -->
         <div id="face-effect" class="face-effect" style="display: none;">
           <div class="effect-icon" id="effect-icon"></div>
           <div class="effect-name" id="effect-name"></div>
@@ -99,7 +94,7 @@
 
   </div>
 
-
+  <!-- Overlay de carga -->
   <div id="loading-overlay" class="loading-overlay" style="display: none;">
     <div class="loading-content">
       <div class="spinner"></div>
@@ -107,23 +102,14 @@
     </div>
   </div>
 
-<!-- Primero: TensorFlow.js compatible con face-api.js -->
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.7.4"></script>
+  <!-- Carga de scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.7.4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
-<!-- Segundo: face-api.js correcto -->
-<script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
-
-<!-- Tercero: jsQR y otros si quieres -->
-<script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-<!-- Último: tu lógica -->
-<script src="{{ url_for('static', filename='js/ar_logic.js') }}"></script>
-
-
-
-<!-- tu lógica -->
-<script src="{{ url_for('static', filename='js/ar_logic.js') }}"></script>
+  <!-- Tu lógica final -->
+  <script src="{{ url_for('static', filename='js/ar_logic.js') }}"></script>
 </body>
 </html>
