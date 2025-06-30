@@ -36,8 +36,8 @@ Una aplicación web interactiva que utiliza **Flask**, **JavaScript**, **face-ap
 ### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/tuusuario/explorador-ar.git
-cd explorador-ar
+git clone https://github.com/abgc757/ARCAMERA-FLASK.git
+cd ARCAMERA-FLASK
 ```
 
 ### 2. Crear y activar entorno virtual
