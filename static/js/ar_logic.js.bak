@@ -1,0 +1,216 @@
+// js/ar_logic.js
+
+let arActive = false;
+let cameraStream = null;
+let detectionLoopId = null;
+let lastFaceTime = 0;
+let lastObjectTime = 0;
+
+// Referencias a DOM
+const video        = document.getElementById('camera-video');
+const placeholder  = document.getElementById('camera-placeholder');
+const errorMessage = document.getElementById('error-message');
+const arInterface  = document.getElementById('ar-interface');
+const arContainer  = document.getElementById('ar-container');
+
+const faceEffect      = document.getElementById('face-effect');
+const effectIcon      = document.getElementById('effect-icon');
+const effectName      = document.getElementById('effect-name');
+const randomCreature  = document.getElementById('random-creature');
+const creatureIcon    = document.getElementById('creature-icon');
+const creatureName    = document.getElementById('creature-name');
+const creatureAction  = document.getElementById('creature-action');
+const windowAnimation = document.getElementById('window-animation');
+const plantAnimal     = document.getElementById('plant-animal');
+const animalIcon      = document.getElementById('animal-icon');
+const animalName      = document.getElementById('animal-name');
+
+// Canvas off-screen para procesar frames
+const offscreenCanvas = document.createElement('canvas');
+const offscreenCtx    = offscreenCanvas.getContext('2d');
+
+// Modelos
+let cocoModel = null;
+
+// helpers UI
+function show(el){ el.style.display = 'flex'; }
+function hide(el){ el.style.display = 'none'; }
+function showError(msg){
+  errorMessage.innerText = msg;
+  errorMessage.style.display = 'block';
+}
+function hideError(){
+  errorMessage.innerText = '';
+  errorMessage.style.display = 'none';
+}
+
+// inicia la cámara con preferencia a trasera
+async function startCamera(){
+  try {
+    if(cameraStream) stopCamera();
+
+    const prefs = [
+      { video: { facingMode: 'environment' } },
+      { video: { facingMode: 'user' } },
+      { video: true }
+    ];
+    for(let p of prefs){
+      try { cameraStream = await navigator.mediaDevices.getUserMedia(p); break; }
+      catch{}
+    }
+    if(!cameraStream) throw new Error('No se pudo acceder a la cámara');
+
+    video.srcObject = cameraStream;
+    await video.play();
+
+    offscreenCanvas.width  = video.videoWidth;
+    offscreenCanvas.height = video.videoHeight;
+
+    hide(placeholder);
+    return true;
+  } catch(err){
+    showError(err.message || 'Error al acceder a la cámara');
+    show(placeholder);
+    return false;
+  }
+}
+
+// detiene la cámara
+function stopCamera(){
+  if(cameraStream){
+    cameraStream.getTracks().forEach(t=>t.stop());
+    cameraStream = null;
+  }
+  video.srcObject = null;
+  show(placeholder);
+}
+
+// cargado de modelos
+async function loadModels() {
+  const loader = document.getElementById('loading-overlay');
+  show(loader);
+
+  try {
+    await faceapi.nets.tinyFaceDetector.loadFromUri('/static/models');
+    await faceapi.nets.faceLandmark68TinyNet.loadFromUri('/static/models');
+    cocoModel = await cocoSsd.load();
+  } catch (err) {
+    console.error('Error cargando modelos:', err);
+    showError('No se pudieron cargar los modelos.');
+  } finally {
+    hide(loader);
+  }
+}
+
+// efectos
+function handleFaceDetection(){
+  const opts = [
+    {name:'Sombrero Loco',  icon:'🎩'},
+    {name:'Gafas de Sol',   icon:'🕶️'},
+    {name:'Bigote Elegante',icon:'👨'},
+    {name:'Corona Real',    icon:'👑'},
+    {name:'Antenas Alien',  icon:'👽'}
+  ];
+  const pick = opts[Math.floor(Math.random()*opts.length)];
+  effectIcon.innerText = pick.icon;
+  effectName.innerText = pick.name;
+  show(faceEffect);
+  setTimeout(()=>hide(faceEffect), 4000);
+}
+function spawnRandomCreature(){
+  const opts = [
+    {name:'Conejo',  icon:'🐇', action:'Saltó'},
+    {name:'Araña',   icon:'🕷️', action:'Escurrió'},
+    {name:'Robot',   icon:'🤖', action:'Desapareció'},
+    {name:'Dragón',  icon:'🐉', action:'Huyó'},
+    {name:'Mariposa',icon:'🦋', action:'Voló'}
+  ];
+  const pick = opts[Math.floor(Math.random()*opts.length)];
+  creatureIcon.innerText   = pick.icon;
+  creatureName.innerText   = pick.name;
+  creatureAction.innerText = pick.action + '!';
+  show(randomCreature);
+  setTimeout(()=>hide(randomCreature), 3000);
+}
+function triggerPlantAnimal(){
+  const opts = [
+    {name:'Colibrí',   icon:'🐦'},
+    {name:'Mariquita', icon:'🐞'},
+    {name:'Ardilla',   icon:'🐿️'},
+    {name:'Serpiente', icon:'🐍'},
+    {name:'Mariposa',  icon:'🦋'}
+  ];
+  const pick = opts[Math.floor(Math.random()*opts.length)];
+  animalIcon.innerText = pick.icon;
+  animalName.innerText = pick.name;
+  show(plantAnimal);
+  setTimeout(()=>hide(plantAnimal), 4000);
+}
+function triggerWindowAnimation(data){
+  // si quieres usar `data` del QR para personalizar ;)
+  show(windowAnimation);
+  setTimeout(()=>hide(windowAnimation), 5000);
+}
+
+// bucle de detección de frames
+async function detectionLoop(){
+  if(!arActive) return;
+
+  offscreenCtx.drawImage(video,0,0,offscreenCanvas.width,offscreenCanvas.height);
+  const frame = offscreenCtx.getImageData(0,0,offscreenCanvas.width,offscreenCanvas.height);
+  const now = Date.now();
+
+  // caras cada 1.5s
+  if(now - lastFaceTime > 1500){
+    lastFaceTime = now;
+    const faces = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
+    if(faces.length) handleFaceDetection();
+  }
+
+  // plantas/personas + criaturas cada 2s
+  if(now - lastObjectTime > 2000){
+    lastObjectTime = now;
+    const objs = await cocoModel.detect(video);
+    if(objs.find(o => o.class==='potted plant')) triggerPlantAnimal();
+    else if(objs.find(o => o.class==='person')) spawnRandomCreature();
+  }
+
+  // QR en cada frame
+  const code = jsQR(frame.data, frame.width, frame.height);
+  if(code) triggerWindowAnimation(code.data);
+
+  detectionLoopId = requestAnimationFrame(detectionLoop);
+}
+
+// inicia la experiencia AR
+async function startARExperience(){
+  hideError();
+  arInterface.style.display = 'none';
+  arContainer.style.display  = 'flex';
+  arActive = true;
+
+  const ready = await startCamera();
+  if(!ready) return stopARExperience();
+
+  await loadModels();
+  lastFaceTime   = 0;
+  lastObjectTime = 0;
+  detectionLoop();
+}
+
+// detiene todo
+function stopARExperience(){
+  arActive = false;
+  cancelAnimationFrame(detectionLoopId);
+  stopCamera();
+  hide(faceEffect);
+  hide(randomCreature);
+  hide(windowAnimation);
+  hide(plantAnimal);
+  arContainer.style.display  = 'none';
+  arInterface.style.display = 'flex';
+}
+
+// eventos de botones
+document.getElementById('start-btn').addEventListener('click', startARExperience);
+document.getElementById('exit-btn').addEventListener('click',  stopARExperience);

@@ -1,0 +1,7 @@
+Flask==3.0.3
+gunicorn==21.2.0  # Para producción
+opencv-python==4.10.0.82  # Solo si planeas agregar visión por computadora del lado del servidor
+numpy==1.26.4      # Requerido por OpenCV
+requests==2.32.3   # Por si necesitas conectar con APIs externas
+flask-socketio
+eventlet

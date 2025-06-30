@@ -1,0 +1,53 @@
+<!-- contenedor de la experiencia AR -->
+<div id="ar-container" style="display: none;">
+  <div class="camera-feed ar-view">
+    <video id="camera-video"
+           class="camera-video"
+           autoplay
+           playsinline
+           muted>
+    </video>
+
+    <!-- ✅ CANVAS PARA EFECTOS (GAFAS ANIMADAS) -->
+    <canvas id="overlay-canvas" class="overlay-canvas"></canvas>
+
+    <div id="camera-placeholder" class="camera-placeholder">
+      <div class="placeholder-content">
+        <div class="placeholder-icon">📷</div>
+        <div class="placeholder-text">Cámara no disponible</div>
+      </div>
+    </div>
+
+    <!-- Filtro facial -->
+    <div id="face-effect" class="face-effect" style="display: none;">
+      <div class="effect-icon" id="effect-icon"></div>
+      <div class="effect-name" id="effect-name"></div>
+    </div>
+
+    <!-- Criatura aleatoria -->
+    <div id="random-creature" class="random-creature" style="display: none;">
+      <div class="creature-icon" id="creature-icon"></div>
+      <div class="creature-info">
+        <div class="creature-name" id="creature-name"></div>
+        <div class="creature-action" id="creature-action"></div>
+      </div>
+    </div>
+
+    <!-- Ventana animada / QR -->
+    <div id="window-animation" class="window-animation" style="display: none;">
+      <div class="window-frame">
+        <div class="animation-element">🎭</div>
+        <div class="animation-text">¡Espectáculo en vivo!</div>
+      </div>
+    </div>
+
+    <!-- Planta + animal -->
+    <div id="plant-animal" class="plant-animal" style="display: none;">
+      <div class="plant-icon">🌿</div>
+      <div class="animal-icon" id="animal-icon"></div>
+      <div class="animal-name" id="animal-name"></div>
+    </div>
+  </div>
+
+  <button id="exit-btn" class="exit-button">Salir de la Experiencia AR</button>
+</div>
