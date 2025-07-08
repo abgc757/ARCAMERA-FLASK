@@ -2,7 +2,7 @@
 body {
   margin: 0;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: linear-gradient(135deg, #1a2a6c, #b21f1f, #1a2a6c);
+  background: linear-gradient(135deg, #c32b95, #28c9a3, #9c215a);
   color: white;
   text-align: center;
   min-height: 100vh;
@@ -36,15 +36,15 @@ body {
 /* Títulos y párrafos */
 h1 {
   font-size: 3.5rem;
-  background: linear-gradient(45deg, #ff7e5f, #feb47b);
+  background: linear-gradient(45deg, #f4dc27, #feb47b);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
-p { font-size: 1.2rem; color: #e0e0ff; }
+p { font-size: 1.2rem; color: #000000; }
 
 /* Botón principal */
 .camera-button {
-  background: linear-gradient(to right, #6a11cb 0%, #2575fc 100%);
+  background: linear-gradient(to right, #e0e024 0%, #020006 100%);
   color: white; border: none;
   padding: 18px 50px;
   font-size: 1.4rem;
@@ -242,7 +242,7 @@ p { font-size: 1.2rem; color: #e0e0ff; }
 }
 
 /* Botón de salida */
-.exit-button {
+/* .exit-button {
   margin-top: 10px;
   background: linear-gradient(to right, #ff416c, #ff4b2b);
   color: white; border: none;
@@ -255,7 +255,7 @@ p { font-size: 1.2rem; color: #e0e0ff; }
 .exit-button:hover {
   transform: translateY(-3px);
   box-shadow: 0 5px 15px rgba(255,65,108,0.4);
-}
+} */
 
 
 
@@ -301,7 +301,7 @@ p { font-size: 1.2rem; color: #e0e0ff; }
 }
 
 /* Filtro de alien */
-.alien-filter {
+/* .alien-filter {
   position: absolute;
   z-index: 15;
   width: 150px;
@@ -311,4 +311,12 @@ p { font-size: 1.2rem; color: #e0e0ff; }
   top: 0;
   left: 0;
   display: none;
+} */
+
+.dynamic-filter {
+  position: absolute;
+  z-index: 10;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  display: block;
 }

@@ -1,4 +1,4 @@
-// js/ar_logic.js - versión combinada con filtro alienígena
+// js/ar_logic.js - versión mejorada con múltiples filtros faciales aleatorios
 
 let arActive = false;
 let cameraStream = null;
@@ -7,13 +7,12 @@ let lastFaceTime = 0;
 let lastObjectTime = 0;
 
 // Referencias a DOM
-const video        = document.getElementById('camera-video');
-const placeholder  = document.getElementById('camera-placeholder');
-const errorMessage = document.getElementById('error-message');
-const arInterface  = document.getElementById('ar-interface');
-const arContainer  = document.getElementById('ar-container');
+const video           = document.getElementById('camera-video');
+const placeholder     = document.getElementById('camera-placeholder');
+const errorMessage    = document.getElementById('error-message');
+const arInterface     = document.getElementById('ar-interface');
+const arContainer     = document.getElementById('ar-container');
 const faceEffect      = document.getElementById('face-effect');
-const alienFilterImg  = document.getElementById('alien-filter'); // <img id="alien-filter">
 const effectIcon      = document.getElementById('effect-icon');
 const effectName      = document.getElementById('effect-name');
 const randomCreature  = document.getElementById('random-creature');
@@ -25,12 +24,15 @@ const plantAnimal     = document.getElementById('plant-animal');
 const animalIcon      = document.getElementById('animal-icon');
 const animalName      = document.getElementById('animal-name');
 
-// Canvas off-screen para procesar frames
 const offscreenCanvas = document.createElement('canvas');
 const offscreenCtx    = offscreenCanvas.getContext('2d');
 
-// Modelos
 let cocoModel = null;
+
+const filterOptions = [
+  'CONEJO.png', 'CUERNOS-ROJOS.png', 'DIABLITO.png', 'ENAMORADO(A).png',
+  'MAPACHE.png', 'MIAU.png', 'UNICORNIO.png', 'ZORRO INTELECTUAL.png', 'DALMATA.png'
+];
 
 function show(el){ el.style.display = 'flex'; }
 function hide(el){ el.style.display = 'none'; }
@@ -82,32 +84,43 @@ async function loadModels(){
   cocoModel = await cocoSsd.load();
 }
 
-// Filtro alienígena
+function clearOldFilters() {
+  document.querySelectorAll('.dynamic-filter').forEach(el => el.remove());
+}
+
 async function handleFaceDetection() {
-  const detection = await faceapi.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true);
-  if (!detection) {
-    alienFilterImg.style.display = 'none';
-    return;
-  }
+  clearOldFilters();
+  const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true);
+  if (!detections.length) return;
 
-  const landmarks = detection.landmarks;
-  const leftEye = landmarks.getLeftEye();
-  const rightEye = landmarks.getRightEye();
-  const nose = landmarks.getNose();
+  detections.forEach(det => {
+    const landmarks = det.landmarks;
+    const leftEye = landmarks.getLeftEye();
+    const rightEye = landmarks.getRightEye();
+    const nose = landmarks.getNose();
 
-  const noseX = (nose[0].x + nose[nose.length - 1].x) / 2;
-  const noseY = (nose[0].y + nose[nose.length - 1].y) / 2;
+    const noseX = (nose[0].x + nose[nose.length - 1].x) / 2;
+    const noseY = (nose[0].y + nose[nose.length - 1].y) / 2;
+    const eyeDistance = Math.abs(leftEye[0].x - rightEye[3].x);
+    const width = eyeDistance * 3.2;
+    const height = width * 1.3;
 
-  const eyeDistance = Math.abs(leftEye[0].x - rightEye[3].x);
-  const width = eyeDistance * 3.2;
-  const height = width * 1.3;
-
-  alienFilterImg.style.display = 'block';
-  alienFilterImg.style.width = `${width}px`;
-  alienFilterImg.style.height = `${height}px`;
-  alienFilterImg.style.left = `${noseX}px`;
-  alienFilterImg.style.top = `${noseY - height / 2}px`;
-  alienFilterImg.style.transform = 'translate(-50%, -50%)';
+    const img = document.createElement('img');
+    img.src = `/static/img/${filterOptions[Math.floor(Math.random() * filterOptions.length)]}`;
+    img.className = 'dynamic-filter';
+    Object.assign(img.style, {
+      position: 'absolute',
+      display: 'block',
+      width: `${width}px`,
+      height: `${height}px`,
+      left: `${noseX}px`,
+      top: `${noseY - height / 2}px`,
+      transform: 'translate(-50%, -50%)',
+      pointerEvents: 'none',
+      zIndex: 10
+    });
+    video.parentElement.appendChild(img);
+  });
 }
 
 function spawnRandomCreature(){
@@ -155,8 +168,7 @@ async function detectionLoop(){
 
   if(now - lastFaceTime > 1500){
     lastFaceTime = now;
-    const faces = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions());
-    if(faces.length) handleFaceDetection();
+    handleFaceDetection();
   }
 
   if(now - lastObjectTime > 2000){
@@ -195,7 +207,7 @@ function stopARExperience(){
   hide(randomCreature);
   hide(windowAnimation);
   hide(plantAnimal);
-  alienFilterImg.style.display = 'none';
+  clearOldFilters();
   arContainer.style.display  = 'none';
   arInterface.style.display = 'flex';
 }

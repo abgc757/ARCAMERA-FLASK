@@ -1,0 +1,204 @@
+// js/ar_logic.js mejorado con filtro alien facial
+
+let arActive = false;
+let cameraStream = null;
+let detectionLoopId = null;
+
+const video            = document.getElementById('camera-video');
+const placeholder      = document.getElementById('camera-placeholder');
+const errorMessage     = document.getElementById('error-message');
+const arInterface      = document.getElementById('ar-interface');
+const arContainer      = document.getElementById('ar-container');
+const alienFilterImg   = document.getElementById('alien-filter');
+const faceEffect       = document.getElementById('face-effect');
+const effectIcon       = document.getElementById('effect-icon');
+const effectName       = document.getElementById('effect-name');
+const randomCreature   = document.getElementById('random-creature');
+const creatureIcon     = document.getElementById('creature-icon');
+const creatureName     = document.getElementById('creature-name');
+const creatureAction   = document.getElementById('creature-action');
+const windowAnimation  = document.getElementById('window-animation');
+const plantAnimal      = document.getElementById('plant-animal');
+const animalIcon       = document.getElementById('animal-icon');
+const animalName       = document.getElementById('animal-name');
+
+let cocoModel = null;
+
+function show(el) { el.style.display = 'flex'; }
+function hide(el) { el.style.display = 'none'; }
+function showError(msg) {
+  errorMessage.innerText = msg;
+  errorMessage.style.display = 'block';
+}
+function hideError() {
+  errorMessage.innerText = '';
+  errorMessage.style.display = 'none';
+}
+
+async function startCamera() {
+  try {
+    if (cameraStream) stopCamera();
+
+    const prefs = [
+      { video: { facingMode: 'environment' } },
+      { video: { facingMode: 'user' } },
+      { video: true }
+    ];
+    for (let p of prefs) {
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia(p);
+        break;
+      } catch {}
+    }
+    if (!cameraStream) throw new Error('No se pudo acceder a la cámara');
+
+    video.srcObject = cameraStream;
+    await video.play();
+    hide(placeholder);
+    return true;
+  } catch (err) {
+    showError(err.message || 'Error al acceder a la cámara');
+    show(placeholder);
+    return false;
+  }
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  video.srcObject = null;
+  show(placeholder);
+}
+
+async function loadModels() {
+  await faceapi.nets.tinyFaceDetector.loadFromUri('/static/models');
+  await faceapi.nets.faceLandmark68TinyNet.loadFromUri('/static/models');
+  cocoModel = await cocoSsd.load();
+}
+
+function spawnRandomCreature() {
+  const opts = [
+    { name: 'Conejo', icon: '🐇', action: 'Saltó' },
+    { name: 'Araña', icon: '🕷️', action: 'Escurrió' },
+    { name: 'Robot', icon: '🤖', action: 'Desapareció' },
+    { name: 'Dragón', icon: '🐉', action: 'Huyó' },
+    { name: 'Mariposa', icon: '🦋', action: 'Voló' }
+  ];
+  const pick = opts[Math.floor(Math.random() * opts.length)];
+  creatureIcon.innerText = pick.icon;
+  creatureName.innerText = pick.name;
+  creatureAction.innerText = pick.action + '!';
+  show(randomCreature);
+  setTimeout(() => hide(randomCreature), 3000);
+}
+
+function triggerPlantAnimal() {
+  const opts = [
+    { name: 'Colibrí', icon: '🐦' },
+    { name: 'Mariquita', icon: '🐞' },
+    { name: 'Ardilla', icon: '🐿️' },
+    { name: 'Serpiente', icon: '🐍' },
+    { name: 'Mariposa', icon: '🦋' }
+  ];
+  const pick = opts[Math.floor(Math.random() * opts.length)];
+  animalIcon.innerText = pick.icon;
+  animalName.innerText = pick.name;
+  show(plantAnimal);
+  setTimeout(() => hide(plantAnimal), 4000);
+}
+
+function triggerWindowAnimation(data) {
+  show(windowAnimation);
+  setTimeout(() => hide(windowAnimation), 5000);
+}
+
+async function handleFaceDetection() {
+  const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks();
+
+  if (!detections.length) {
+    alienFilterImg.style.display = 'none';
+    return;
+  }
+
+  const face = detections[0];
+  const landmarks = face.landmarks;
+
+  const leftEye = landmarks.getLeftEye();
+  const rightEye = landmarks.getRightEye();
+
+  const centerX = (leftEye[0].x + rightEye[3].x) / 2;
+  const centerY = (leftEye[0].y + rightEye[3].y) / 2 - 30;
+  const eyeDistance = Math.abs(rightEye[3].x - leftEye[0].x);
+  const filterWidth = eyeDistance * 3;
+  const filterHeight = filterWidth * 1.2;
+
+  alienFilterImg.style.display = 'block';
+  alienFilterImg.style.position = 'absolute';
+  alienFilterImg.style.left = `${centerX}px`;
+  alienFilterImg.style.top = `${centerY}px`;
+  alienFilterImg.style.width = `${filterWidth}px`;
+  alienFilterImg.style.height = `${filterHeight}px`;
+  alienFilterImg.style.transform = 'translate(-50%, -50%)';
+}
+
+async function detectionLoop() {
+  if (!arActive) return;
+
+  const now = Date.now();
+
+  // detectar caras cada frame
+  await handleFaceDetection();
+
+  // detectar objetos cada 2s
+  if (now - lastObjectTime > 2000) {
+    lastObjectTime = now;
+    const objs = await cocoModel.detect(video);
+    if (objs.find(o => o.class === 'potted plant')) triggerPlantAnimal();
+    else if (objs.find(o => o.class === 'person')) spawnRandomCreature();
+  }
+
+  const canvas = document.querySelector('.overlay-canvas');
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  requestAnimationFrame(detectionLoop);
+}
+
+async function startARExperience() {
+  hideError();
+  arInterface.style.display = 'none';
+  arContainer.style.display = 'flex';
+  arActive = true;
+
+  const ready = await startCamera();
+  if (!ready) return stopARExperience();
+
+  await loadModels();
+
+  const canvas = faceapi.createCanvasFromMedia(video);
+  canvas.classList.add('overlay-canvas');
+  document.querySelector('.camera-feed').appendChild(canvas);
+  faceapi.matchDimensions(canvas, {
+    width: video.videoWidth,
+    height: video.videoHeight
+  });
+
+  detectionLoop();
+}
+
+function stopARExperience() {
+  arActive = false;
+  cancelAnimationFrame(detectionLoopId);
+  stopCamera();
+  hide(faceEffect);
+  hide(randomCreature);
+  hide(windowAnimation);
+  hide(plantAnimal);
+  arContainer.style.display = 'none';
+  arInterface.style.display = 'flex';
+}
+
+document.getElementById('start-btn').addEventListener('click', startARExperience);
+document.getElementById('exit-btn').addEventListener('click', stopARExperience);
