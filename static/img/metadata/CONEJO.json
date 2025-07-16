@@ -1,0 +1,10 @@
+{
+  "nombre": "conejo.png",
+  "anchos_reales": [1.0, 1.0],  // tamaño virtual de referencia
+  "anclas": {
+    "ojo_izquierdo": [0.30, 0.42],
+    "ojo_derecho": [0.70, 0.42],
+    "nariz": [0.50, 0.57],
+    "boca": [0.50, 0.72]
+  }
+}

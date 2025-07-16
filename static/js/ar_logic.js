@@ -1,4 +1,4 @@
-// js/ar_logic.js - versión mejorada con múltiples filtros faciales aleatorios
+// js/ar_logic.js - versión completa con filtros, criaturas, overlays y easter eggs
 
 let arActive = false;
 let cameraStream = null;
@@ -24,15 +24,149 @@ const plantAnimal     = document.getElementById('plant-animal');
 const animalIcon      = document.getElementById('animal-icon');
 const animalName      = document.getElementById('animal-name');
 
+// Aseguramos que .camera-feed existe antes de insertar overlay
+const cameraFeed = document.querySelector('.camera-feed') || video.parentElement;
+const overlayLayer = document.createElement('div');
+overlayLayer.className = 'overlay-canvas';
+overlayLayer.style.position = 'absolute';
+overlayLayer.style.top = 0;
+overlayLayer.style.left = 0;
+overlayLayer.style.width = '100%';
+overlayLayer.style.height = '100%';
+overlayLayer.style.zIndex = 9;
+cameraFeed.style.position = 'relative';
+cameraFeed.appendChild(overlayLayer);
+
 const offscreenCanvas = document.createElement('canvas');
-const offscreenCtx    = offscreenCanvas.getContext('2d');
+const offscreenCtx = offscreenCanvas.getContext('2d');
 
 let cocoModel = null;
+
+const multimediaQueue = [
+  { type: 'image', src: '/static/img/aliceinwonderland.jpg', duration: 5000 },
+  { type: 'video', src: '/static/video/MarioBomb.mp4', duration: 10000 },
+  { type: 'image', src: '/static/img/crew.png', duration: 5000 },
+  { type: 'video', src: '/static/video/MarioKart.mp4', duration: 10000 },
+  { type: 'youtube', src: 'https://www.youtube.com/embed/OPiDMM6YwFA?start=11&autoplay=1', duration: 10000 },
+  { type: 'youtube', src: 'https://www.youtube.com/embed/yzyKVMd5Brk?start=40&autoplay=1', duration: 10000 },
+  { type: 'youtube', src: 'https://www.youtube.com/embed/WE3PLVmZXw8?start=10&autoplay=1', duration: 10000 }
+];
+
+let overlayIndex = 0;
+let overlayTimeoutId  = null;
+
+function cycleOverlay() {
+  overlayLayer.innerHTML = '';
+  const item = multimediaQueue[overlayIndex];
+
+  if (item.type === 'image') {
+    const img = document.createElement('img');
+    img.src = item.src;
+    img.style.width = '100%';
+    img.style.height = '100%';
+    img.style.objectFit = 'cover';
+    overlayLayer.appendChild(img);
+  } else if (item.type === 'video') {
+    const vid = document.createElement('video');
+    vid.src = item.src;
+    vid.autoplay = true;
+    vid.muted = true;
+    vid.loop = true;
+    vid.playsInline = true;
+    vid.style.width = '100%';
+    vid.style.height = '100%';
+    vid.style.objectFit = 'cover';
+    overlayLayer.appendChild(vid);
+  } else if (item.type === 'youtube') {
+    const iframe = document.createElement('iframe');
+    iframe.src = item.src;
+    iframe.allow = 'autoplay';
+    iframe.frameBorder = '0';
+    iframe.allowFullscreen = true;
+    iframe.style.width = '100%';
+    iframe.style.height = '100%';
+    iframe.style.border = 'none';
+    overlayLayer.appendChild(iframe);
+  }
+
+  overlayIndex = (overlayIndex + 1) % multimediaQueue.length;
+  setTimeout(cycleOverlay, item.duration);
+}
+
+async function startARExperience() {
+  hideError();
+  arInterface.style.display = 'none';
+  arContainer.style.display = 'flex';
+  arActive = true;
+
+  const ready = await startCamera();
+  if (!ready) return stopARExperience();
+
+  await loadModels();
+  lastFaceTime = 0;
+  lastObjectTime = 0;
+
+  cycleOverlay();
+  detectionLoop();
+}
 
 const filterOptions = [
   'CONEJO.png', 'CUERNOS-ROJOS.png', 'DIABLITO.png', 'ENAMORADO(A).png',
   'MAPACHE.png', 'MIAU.png', 'UNICORNIO.png', 'ZORRO INTELECTUAL.png', 'DALMATA.png'
 ];
+
+const filtersMetadata = {
+  "CONEJO.png": {
+    anclas: {
+      ojo_izquierdo: [0.30, 0.42], ojo_derecho: [0.70, 0.42], nariz: [0.50, 0.57], boca: [0.50, 0.72]
+    }
+  },
+  "CUERNOS-ROJOS.png": {
+    anclas: {
+      ojo_izquierdo: [0.33, 0.45], ojo_derecho: [0.67, 0.45], nariz: [0.50, 0.60], boca: [0.50, 0.80]
+    }
+  },
+  "DALMATA.png": {
+    anclas: {
+      ojo_izquierdo: [0.30, 0.40], ojo_derecho: [0.70, 0.40], nariz: [0.50, 0.58], boca: [0.50, 0.80]
+    }
+  },
+  "DIABLITO.png": {
+    anclas: {
+      ojo_izquierdo: [0.35, 0.42], ojo_derecho: [0.65, 0.42], nariz: [0.50, 0.56], boca: [0.50, 0.76]
+    }
+  },
+  "ENAMORADO(A).png": {
+    anclas: {
+      ojo_izquierdo: [0.30, 0.42], ojo_derecho: [0.70, 0.42], nariz: [0.50, 0.58], boca: [0.50, 0.75]
+    }
+  },
+  "Filtroalien.png": {
+    anclas: {
+      ojo_izquierdo: [0.32, 0.42], ojo_derecho: [0.68, 0.42], nariz: [0.50, 0.58], boca: [0.50, 0.74]
+    }
+  },
+  "MAPACHE.png": {
+    anclas: {
+      ojo_izquierdo: [0.32, 0.44], ojo_derecho: [0.68, 0.44], nariz: [0.50, 0.60], boca: [0.50, 0.75]
+    }
+  },
+  "MIAU.png": {
+    anclas: {
+      ojo_izquierdo: [0.32, 0.42], ojo_derecho: [0.68, 0.42], nariz: [0.50, 0.58], boca: [0.50, 0.72]
+    }
+  },
+  "UNICORNIO.png": {
+    anclas: {
+      ojo_izquierdo: [0.35, 0.44], ojo_derecho: [0.65, 0.44], nariz: [0.50, 0.58], boca: [0.50, 0.75]
+    }
+  },
+  "ZORRO INTELECTUAL.png": {
+    anclas: {
+      ojo_izquierdo: [0.34, 0.44], ojo_derecho: [0.66, 0.44], nariz: [0.50, 0.58], boca: [0.50, 0.74]
+    }
+  }
+};
 
 function show(el){ el.style.display = 'flex'; }
 function hide(el){ el.style.display = 'none'; }
@@ -88,34 +222,63 @@ function clearOldFilters() {
   document.querySelectorAll('.dynamic-filter').forEach(el => el.remove());
 }
 
+function averagePoint(points) {
+  const x = points.reduce((sum, p) => sum + p.x, 0) / points.length;
+  const y = points.reduce((sum, p) => sum + p.y, 0) / points.length;
+  return { x, y };
+}
+
 async function handleFaceDetection() {
   clearOldFilters();
-  const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions()).withFaceLandmarks(true);
+  const detections = await faceapi
+    .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+    .withFaceLandmarks(true);
+
   if (!detections.length) return;
+
+  const scaleX = video.clientWidth / video.videoWidth;
+  const scaleY = video.clientHeight / video.videoHeight;
 
   detections.forEach(det => {
     const landmarks = det.landmarks;
-    const leftEye = landmarks.getLeftEye();
-    const rightEye = landmarks.getRightEye();
-    const nose = landmarks.getNose();
 
-    const noseX = (nose[0].x + nose[nose.length - 1].x) / 2;
-    const noseY = (nose[0].y + nose[nose.length - 1].y) / 2;
-    const eyeDistance = Math.abs(leftEye[0].x - rightEye[3].x);
-    const width = eyeDistance * 3.2;
+    const points = {
+      ojo_izquierdo: averagePoint(landmarks.getLeftEye()),
+      ojo_derecho: averagePoint(landmarks.getRightEye()),
+      nariz: averagePoint(landmarks.getNose()),
+      boca: averagePoint(landmarks.getMouth())
+    };
+
+    const filterName = filterOptions[Math.floor(Math.random() * filterOptions.length)];
+    const metadata = filtersMetadata[filterName];
+
+    if (!metadata || !metadata.anclas) return;
+
+    const anchorKey = Object.keys(metadata.anclas).find(key => points[key]);
+    if (!anchorKey) return;
+
+    const anchorRelative = metadata.anclas[anchorKey];
+    const faceAnchor = points[anchorKey];
+
+    const faceX = faceAnchor.x * scaleX;
+    const faceY = faceAnchor.y * scaleY;
+
+    const eyeDist = Math.abs(points.ojo_izquierdo.x - points.ojo_derecho.x) * scaleX || 100;
+    const width = eyeDist * 3.0;
     const height = width * 1.3;
 
+    const offsetX = anchorRelative[0] * width;
+    const offsetY = anchorRelative[1] * height;
+
     const img = document.createElement('img');
-    img.src = `/static/img/${filterOptions[Math.floor(Math.random() * filterOptions.length)]}`;
+    img.src = `/static/img/${filterName}`;
     img.className = 'dynamic-filter';
     Object.assign(img.style, {
       position: 'absolute',
-      display: 'block',
       width: `${width}px`,
       height: `${height}px`,
-      left: `${noseX}px`,
-      top: `${noseY - height / 2}px`,
-      transform: 'translate(-50%, -50%)',
+      left: `${faceX - offsetX}px`,
+      top: `${faceY - offsetY}px`,
       pointerEvents: 'none',
       zIndex: 10
     });
@@ -123,21 +286,36 @@ async function handleFaceDetection() {
   });
 }
 
-function spawnRandomCreature(){
+function spawnRandomCreature() {
   const opts = [
-    {name:'Conejo',  icon:'🐇', action:'Saltó'},
-    {name:'Araña',   icon:'🕷️', action:'Escurrió'},
-    {name:'Robot',   icon:'🤖', action:'Desapareció'},
-    {name:'Dragón',  icon:'🐉', action:'Huyó'},
-    {name:'Mariposa',icon:'🦋', action:'Voló'}
+    { name: 'Pixil',        src: '/static/img/pixil.png',     action: 'Brilló'    },
+    { name: 'Planta',       src: '/static/img/plant.png',     action: 'Brotó'     },
+    { name: 'MiniCriatura', src: '/static/img/tinything.png', action: 'Parpadeó'  },
+    { name: 'Banner', src: '/static/img/aliceinwonderland.jpg', action: 'Wonderland'},
+    { name: 'video', src: '/static/video/MarioBomb.mp4', duration: 10000 },
+    { name: 'image', src: '/static/img/crew.png', duration: 5000 },
+    { type: 'video', src: '/static/video/MarioKart.mp4', duration: 10000 },
+    { type: 'youtube', src: 'https://www.youtube.com/embed/OPiDMM6YwFA?start=11&autoplay=1', duration: 10000 },
+    { type: 'youtube', src: 'https://www.youtube.com/embed/yzyKVMd5Brk?start=40&autoplay=1', duration: 10000 },
+    { type: 'youtube', src: 'https://www.youtube.com/embed/WE3PLVmZXw8?start=10&autoplay=1', duration: 10000 }
   ];
-  const pick = opts[Math.floor(Math.random()*opts.length)];
-  creatureIcon.innerText   = pick.icon;
+  const pick = opts[Math.floor(Math.random() * opts.length)];
+
+  // Inserta la imagen como icono
+  creatureIcon.innerHTML = `
+    <img
+      src="${pick.src}"
+      alt="${pick.name}"
+      style="width:2em; height:2em; object-fit:contain;"
+    >
+  `;
   creatureName.innerText   = pick.name;
   creatureAction.innerText = pick.action + '!';
+
   show(randomCreature);
-  setTimeout(()=>hide(randomCreature), 3000);
+  setTimeout(() => hide(randomCreature), 3000);
 }
+
 
 function triggerPlantAnimal(){
   const opts = [
@@ -151,12 +329,12 @@ function triggerPlantAnimal(){
   animalIcon.innerText = pick.icon;
   animalName.innerText = pick.name;
   show(plantAnimal);
-  setTimeout(()=>hide(plantAnimal), 4000);
+  setTimeout(()=>hide(plantAnimal), 100000);
 }
 
 function triggerWindowAnimation(data){
   show(windowAnimation);
-  setTimeout(()=>hide(windowAnimation), 5000);
+  setTimeout(()=>hide(windowAnimation), 100000);
 }
 
 async function detectionLoop(){
@@ -214,3 +392,33 @@ function stopARExperience(){
 
 document.getElementById('start-btn').addEventListener('click', startARExperience);
 document.getElementById('exit-btn').addEventListener('click',  stopARExperience);
+
+let secretClickCount = 0;
+let secretClickTimeout;
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  secretClickCount++;
+  clearTimeout(secretClickTimeout);
+  secretClickTimeout = setTimeout(() => {
+    secretClickCount = 0;
+  }, 1500);
+
+  if (secretClickCount === 5) {
+    const egg1 = document.getElementById('easter-egg-1');
+    egg1.style.display = 'block';
+    setTimeout(() => {
+      egg1.style.display = 'none';
+      secretClickCount = 0;
+    }, 5000);
+  }
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.altKey && (e.key === 'e' || e.key === 'E')) {
+    const egg2 = document.getElementById('easter-egg-2');
+    egg2.style.display = 'block';
+    setTimeout(() => {
+      egg2.style.display = 'none';
+    }, 5000);
+  }
+});

@@ -320,3 +320,13 @@ p { font-size: 1.2rem; color: #000000; }
   transform: translate(-50%, -50%);
   display: block;
 }
+
+/* Superposición multimedia */
+.overlay-canvas {
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 15;
+}

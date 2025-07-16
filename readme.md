@@ -107,6 +107,17 @@ python descargar_modelos.py
 
 ## 📸 Créditos
 
-- Filtro `Filtroalien.png` diseñado para superposición facial.
-- Basado en las librerías libres mencionadas arriba.
+**Alumnos del Centro Educativo y Cultural Morelos** 
+*Informática* Generación 2022 - 2025
+- Monica Balderas
+- Kevin Canales 
+- karla Gonzalez
+- Valentina Martinez
+- Carlos Mendez
+- Angel Michel
+- Fabio Miranda
+- Jaciel Nuevo
+- Mariana Samperio
+- Emiliano Santillan
+- Azul Vargas
 ---

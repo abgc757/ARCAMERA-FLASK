@@ -102,14 +102,30 @@
     </div>
   </div>
 
-  <!-- Carga de scripts -->
+
+    <!-- Easter Egg 1 -->
+  <img 
+    id="easter-egg-1" 
+    src="{{ url_for('static', filename='img/crew.png') }}" 
+    style="display: none; position: fixed; bottom: 10px; right: 10px; width: 100px; z-index: 999;"
+    alt="Secreto 1"
+  />
+
+  <!-- Easter Egg 2 -->
+  <img 
+    id="easter-egg-2" 
+    src="{{ url_for('static', filename='img/crew.png') }}" 
+    style="display: none; position: fixed; top: 10px; left: 10px; width: 100px; z-index: 999;"
+    alt="Secreto 2"
+  />
+
+    <!-- Carga de scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@1.7.4"></script>
   <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
   <script src="https://unpkg.com/jsqr/dist/jsQR.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-
-  <!-- Tu lógica final -->
+    <!-- ✅ Finalmente carga el JS -->
   <script src="{{ url_for('static', filename='js/ar_logic.js') }}"></script>
 </body>
 </html>

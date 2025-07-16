@@ -1,0 +1,10 @@
+{
+  "nombre": "MIAU.png",
+  "anchos_reales": [1.0, 1.0],
+  "anclas": {
+    "ojo_izquierdo": [0.32, 0.42],
+    "ojo_derecho": [0.68, 0.42],
+    "nariz": [0.50, 0.58],
+    "boca": [0.50, 0.72]
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "nombre": "CUERNOS-ROJOS.png",
+  "anchos_reales": [1.0, 1.0],
+  "anclas": {
+    "ojo_izquierdo": [0.33, 0.45],
+    "ojo_derecho": [0.67, 0.45],
+    "nariz": [0.50, 0.60],
+    "boca": [0.50, 0.80]
+  }
+}

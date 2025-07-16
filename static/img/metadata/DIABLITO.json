@@ -1,0 +1,10 @@
+{
+  "nombre": "DIABLITO.png",
+  "anchos_reales": [1.0, 1.0],
+  "anclas": {
+    "ojo_izquierdo": [0.35, 0.42],
+    "ojo_derecho": [0.65, 0.42],
+    "nariz": [0.50, 0.56],
+    "boca": [0.50, 0.76]
+  }
+}
